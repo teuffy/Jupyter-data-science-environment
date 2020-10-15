@@ -92,21 +92,39 @@
  in
    pkgs.mkShell rec {
      name = "Jupyter-data-Env";
-     buildInputs = [ jupyterEnvironment
-                     pkgs.python3Packages.ipywidgets
-                     pkgs.python3Packages.python-language-server
-                     pkgs.python3Packages.jupyter_lsp
-                     iJulia.runtimePackages
+     buildInputs = [
+       jupyterEnvironment
+       pkgs.python3Packages.ipywidgets
+       pkgs.python3Packages.python-language-server
+       pkgs.python3Packages.jupyter_lsp
+       iJulia.runtimePackages
+       iPython.runtimePackages
+       iHaskell.runtimePackages
+       IRkernel.runtimePackages
                    ];
 
      shellHook = ''
-      export R_LIBS_SITE=${builtins.readFile env.r-libs-site}
-      export PATH="${pkgs.lib.makeBinPath ([ env.r-bin-path ] )}:$PATH"
-      export PYTHON=python-Python-data-env
-      #julia_wrapped -e 'Pkg.add(url="https://github.com/JuliaPy/PyCall.jl")'
+       export R_LIBS_SITE=${builtins.readFile env.r-libs-site}
+       export PATH="${pkgs.lib.makeBinPath ([ env.r-bin-path ] )}:$PATH"
+       export PYTHON=python-Python-data-env
+       #julia_wrapped -e 'Pkg.add(url="https://github.com/JuliaPy/PyCall.jl")'
 
-     ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py widgetsnbextension --user
-     ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable --py widgetsnbextension
-    #${jupyterEnvironment}/bin/jupyter-lab --ip
-    '';
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py widgetsnbextension --user
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable --py widgetsnbextension
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyter_lsp
+
+   #for emacs-ein to load kernels environment.
+      ln -sfT ${iPython.spec}/kernels/ipython_Python-data-env ~/.local/share/jupyter/kernels/ipython_Python-data-env
+      ln -sfT ${iJulia.spec}/kernels/julia_Julia-data-env ~/.local/share/jupyter/kernels/iJulia-data-env
+      ln -sfT ${iHaskell.spec}/kernels/ihaskell_ihaskell-data-env ~/.local/share/jupyter/kernels/iHaskell-data-env
+      ln -sfT ${IRkernel.spec}/kernels/ir_IRkernel-data-env ~/.local/share/jupyter/kernels/IRkernel-data-env
+      ln -sfT ${iNix.spec}/kernels/inix_nix-kernel/  ~/.local/share/jupyter/kernels/INix-data-env
+
+
+
+
+
+
+     #${jupyterEnvironment}/bin/jupyter-lab --ip
+                 '';
    }
