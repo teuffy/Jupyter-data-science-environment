@@ -19,6 +19,9 @@
   HistData
   e1071
   plotrix
+  sampling
+  TeachingSampling
+  pewmethods
 #  DASL
   (let
 
