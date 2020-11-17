@@ -92,7 +92,10 @@
 #          "@jupyterlab/jupyterlab-latex@2.0"
         ];
       };
-      extraPackages = p: with p;[ python3Packages.jupyter_lsp python3Packages.python-language-server ];
+      extraPackages = p: with p;[ python3Packages.jupyter_lsp
+                                  python3Packages.python-language-server
+				  python3Packages.jupytext
+				  ];
       extraJupyterPath = p: "${p.python3Packages.jupyter_lsp}/lib/python3.7/site-packages:${p.python3Packages.python-language-server}/lib/python3.7/site-packages";
     };
 
@@ -127,9 +130,9 @@
       ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable --py widgetsnbextension
       ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyter_lsp
       ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyterlab_git
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyterlab-jupytext
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py jupytext --user      
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable jupytext --user --py
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter labextension enable jupyterlab-jupytext
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py jupytext --user      
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable jupytext --user --py
 #      ${pkgs.python3Packages.jupyter_core}/bin/jupyter labextension install jupyterlab-jupytext
 
    #for emacs-ein to load kernels environment.
