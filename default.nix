@@ -5,6 +5,9 @@
     ref = "current";
   };
 
+#  jupyterLibPath = "/home/co/git/jupyterWithPers/";
+  jupyterLibPath = "/home/co/git/jupyterWithGTrunSec/";
+
   haskTorchSrc = builtins.fetchGit {
     url = https://github.com/hasktorch/hasktorch;
     rev = "5f905f7ac62913a09cbb214d17c94dbc64fc8c7b";
@@ -25,15 +28,17 @@
 
   pkgs = (import ./nix/nixpkgs.nix) { inherit overlays; config={ allowUnfree=true; allowBroken=true; };};
 
-  jupyter = import jupyterLib {pkgs=pkgs;};
+#  jupyter = import jupyterLib {pkgs=pkgs;};
+  jupyter = import jupyterLibPath { pkgs=pkgs; };
 
   ihaskell_labextension = import ./nix/ihaskell_labextension.nix { inherit jupyter pkgs; };
 
   env = (import (jupyterLib + "/lib/directory.nix")){ inherit pkgs Rpackages;};
 
-  Rpackages = p: with p; [ ggplot2 dplyr xts purrr cmaes cubature
-                           reshape2
-                         ];
+#  Rpackages = p: with p; [ ggplot2 dplyr xts purrr cmaes cubature
+#                           reshape2 here car
+#                         ];
+  Rpackages = import ./overlay/R-packages-list.nix {inherit pkgs;};
 
   iPython = jupyter.kernels.iPythonWith {
     python3 = pkgs.callPackage ./overlay/python-self-packages.nix { inherit pkgs;};
@@ -83,6 +88,8 @@
           "@bokeh/jupyter_bokeh@2.0.0"
           #"@jupyterlab/git@0.21.0-alpha.0"
           "@krassowski/jupyterlab-lsp@1.1.2"
+#	  "@mwouts/jupytext@1.2.3"
+#          "@jupyterlab/jupyterlab-latex@2.0"
         ];
       };
       extraPackages = p: with p;[ python3Packages.jupyter_lsp python3Packages.python-language-server ];
@@ -97,6 +104,9 @@
        pkgs.python3Packages.ipywidgets
        pkgs.python3Packages.python-language-server
        pkgs.python3Packages.jupyter_lsp
+       pkgs.python3Packages.jupytext
+       pkgs.python3Packages.jupyterlab_git
+#       pkgs.python3Packages.jupyterlab_jupytext
        iJulia.runtimePackages
        iPython.runtimePackages
        iHaskell.runtimePackages
@@ -104,14 +114,23 @@
                    ];
 
      shellHook = ''
+       export hd=$HOME
        export R_LIBS_SITE=${builtins.readFile env.r-libs-site}
        export PATH="${pkgs.lib.makeBinPath ([ env.r-bin-path ] )}:$PATH"
        export PYTHON=python-Python-data-env
-       #julia_wrapped -e 'Pkg.add(url="https://github.com/JuliaPy/PyCall.jl")'
+       #julia_wrapped -e 'import Pkg;Pkg.add(url="https://github.com/JuliaPy/PyCall.jl")'
+     # export JULIA_DEPOT_PATH="/home/co/.julia_pkgs"
+     # export JULIA_NUM_THREADS="12"
+     # export JULIA_PKGDIR="/home/co/.julia_pkgs"
 
       ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py widgetsnbextension --user
       ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable --py widgetsnbextension
       ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyter_lsp
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyterlab_git
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyterlab-jupytext
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py jupytext --user      
+      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable jupytext --user --py
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter labextension install jupyterlab-jupytext
 
    #for emacs-ein to load kernels environment.
       ln -sfT ${iPython.spec}/kernels/ipython_Python-data-env ~/.local/share/jupyter/kernels/ipython_Python-data-env

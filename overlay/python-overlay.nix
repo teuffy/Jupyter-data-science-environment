@@ -39,6 +39,7 @@ let
         pythonPackages.traitlets
         pythonPackages.notebook
         pythonPackages.tornado
+	pythonPackages.jupytext
       ];
     };
 
