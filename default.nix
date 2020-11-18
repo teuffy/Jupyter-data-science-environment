@@ -23,17 +23,25 @@
     (import ./overlay/package-overlay.nix)
     (import ./overlay/julia.nix)
     haskellOverlay
-    hasktorchOverlay
+ #   hasktorchOverlay
   ];
 
-  pkgs = (import ./nix/nixpkgs.nix) { inherit overlays; config={ allowUnfree=true; allowBroken=true; };};
+  inherit (inputflake) loadInput flakeLock;
+  inputflake = import ./nix/lib.nix {};
+
+
+#  pkgs = (import ./nix/nixpkgs.nix) { inherit overlays; config={ allowUnfree=true; allowBroken=true; };};
+  pkgs = (import (loadInput flakeLock.nixpkgs)) { inherit overlays; config={ allowUnfree=true; allowBroken=true; };};
 
 #  jupyter = import jupyterLib {pkgs=pkgs;};
-  jupyter = import jupyterLibPath { pkgs=pkgs; };
+#  jupyter = import jupyterLibPath { pkgs=pkgs; };
+  jupyter = (import (loadInput flakeLock.jupyterWith)){ inherit pkgs;};
+
 
   ihaskell_labextension = import ./nix/ihaskell_labextension.nix { inherit jupyter pkgs; };
 
-  env = (import (jupyterLib + "/lib/directory.nix")){ inherit pkgs Rpackages;};
+#  env = (import (jupyterLib + "/lib/directory.nix")){ inherit pkgs Rpackages;};
+  env = (import ((loadInput flakeLock.jupyterWith) + "/lib/directory.nix")){ inherit pkgs Rpackages;};
 
 #  Rpackages = p: with p; [ ggplot2 dplyr xts purrr cmaes cubature
 #                           reshape2 here car
@@ -41,7 +49,7 @@
   Rpackages = import ./overlay/R-packages-list.nix {inherit pkgs;};
 
   iPython = jupyter.kernels.iPythonWith {
-    python3 = pkgs.callPackage ./overlay/python-self-packages.nix { inherit pkgs;};
+#    python3 = pkgs.callPackage ./overlay/python-self-packages.nix { inherit pkgs;};
     name = "Python-data-env";
     packages = import ./overlay/python-packages-list.nix {inherit pkgs;};
     ignoreCollisions = true;
@@ -54,10 +62,19 @@
 
   iHaskell = jupyter.kernels.iHaskellWith {
     name = "ihaskell-data-env";
-    haskellPackages = pkgs.haskell.packages.ghc883;
-    packages = import ./overlay/haskell-packages-list.nix {inherit pkgs;};
-    inline-r = true;
-    inherit Rpackages;
+#    haskellPackages = pkgs.haskell.packages.ghc883;
+    extraIHaskellFlags = "--codemirror Haskell";  # for jupyterlab syntax highlighting
+    packages = import ./overlay/haskell-packages-list.nix {inherit
+      pkgs;
+#      Diagrams = true;
+#      Hasktorch = true;
+#      InlineC = false;
+#      Matrix = true;
+    };
+#    inline-r = true;
+#    inherit Rpackages;
+    r-libs-site = env.r-libs-site;
+    r-bin-path = env.r-bin-path;
   };
 
   ##julia part
@@ -80,57 +97,64 @@
 
   jupyterEnvironment =
     jupyter.jupyterlabWith {
-      kernels= [ iPython iHaskell IRkernel iJulia iNix ];
+      kernels= [ iPython  IRkernel iJulia iNix ];
       directory = jupyter.mkDirectoryWith {
         extensions = [
-          ihaskell_labextension
-          "@jupyter-widgets/jupyterlab-manager@2.0"
-          "@bokeh/jupyter_bokeh@2.0.0"
-          #"@jupyterlab/git@0.21.0-alpha.0"
-          "@krassowski/jupyterlab-lsp@1.1.2"
+#         ihaskell_labextension
+         "@jupyter-widgets/jupyterlab-manager@2.0.0"
+	  "jupyterlab-jupytext"
+#          "@bokeh/jupyter_bokeh@2.0.0"
+#          #"@jupyterlab/git@0.21.0-alpha.0"
+#          "@krassowski/jupyterlab-lsp@1.1.2"
 #	  "@mwouts/jupytext@1.2.3"
 #          "@jupyterlab/jupyterlab-latex@2.0"
         ];
       };
-      extraPackages = p: with p;[ python3Packages.jupyter_lsp
-                                  python3Packages.python-language-server
-				  python3Packages.jupytext
-				  ];
-      extraJupyterPath = p: "${p.python3Packages.jupyter_lsp}/lib/python3.7/site-packages:${p.python3Packages.python-language-server}/lib/python3.7/site-packages";
-    };
+      extraPackages = p: with p;[
+#         python3Packages.jupyter_lsp
+#         python3Packages.python-language-server
+         python3Packages.jupytext
+	 ];
+      extraJupyterPath = p:
+      #  "${p.python3Packages.jupyter_lsp}/lib/python3.7/site-packages:${p.python3Packages.python-language-server}/lib/python3.7/site-packages";
+      "${p.python3Packages.jupytext}/${pkgs.python3.sitePackages}";
+      };
 
  in
    pkgs.mkShell rec {
      name = "Jupyter-data-Env";
      buildInputs = [
        jupyterEnvironment
-       pkgs.python3Packages.ipywidgets
-       pkgs.python3Packages.python-language-server
-       pkgs.python3Packages.jupyter_lsp
-       pkgs.python3Packages.jupytext
-       pkgs.python3Packages.jupyterlab_git
+        pkgs.python3Packages.jupytext
+	
+#       pkgs.python3Packages.ipywidgets
+#       pkgs.python3Packages.python-language-server
+#       pkgs.python3Packages.jupyter_lsp
+#       pkgs.python3Packages.jupytext
+#       pkgs.python3Packages.jupyterlab_git
 #       pkgs.python3Packages.jupyterlab_jupytext
+
        iJulia.runtimePackages
        iPython.runtimePackages
-       iHaskell.runtimePackages
+#       iHaskell.runtimePackages
        IRkernel.runtimePackages
                    ];
 
      shellHook = ''
        export hd=$HOME
-       export R_LIBS_SITE=${builtins.readFile env.r-libs-site}
-       export PATH="${pkgs.lib.makeBinPath ([ env.r-bin-path ] )}:$PATH"
+ #      export R_LIBS_SITE=${builtins.readFile env.r-libs-site}
+ #      export PATH="${pkgs.lib.makeBinPath ([ env.r-bin-path ] )}:$PATH"
        export PYTHON=python-Python-data-env
-       #julia_wrapped -e 'import Pkg;Pkg.add(url="https://github.com/JuliaPy/PyCall.jl")'
+     # julia_wrapped -e 'import Pkg;Pkg.add(url="https://github.com/JuliaPy/PyCall.jl")'
      # export JULIA_DEPOT_PATH="/home/co/.julia_pkgs"
      # export JULIA_NUM_THREADS="12"
      # export JULIA_PKGDIR="/home/co/.julia_pkgs"
 
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py widgetsnbextension --user
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable --py widgetsnbextension
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyter_lsp
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyterlab_git
-      ${pkgs.python3Packages.jupyter_core}/bin/jupyter labextension enable jupyterlab-jupytext
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py widgetsnbextension --user
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable --py widgetsnbextension
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyter_lsp
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter serverextension enable --py jupyterlab_git
+#      ${pkgs.python3Packages.jupyter_core}/bin/jupyter labextension enable jupyterlab-jupytext
 #      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension install --py jupytext --user      
 #      ${pkgs.python3Packages.jupyter_core}/bin/jupyter nbextension enable jupytext --user --py
 #      ${pkgs.python3Packages.jupyter_core}/bin/jupyter labextension install jupyterlab-jupytext
@@ -138,7 +162,7 @@
    #for emacs-ein to load kernels environment.
       ln -sfT ${iPython.spec}/kernels/ipython_Python-data-env ~/.local/share/jupyter/kernels/ipython_Python-data-env
       ln -sfT ${iJulia.spec}/kernels/julia_Julia-data-env ~/.local/share/jupyter/kernels/iJulia-data-env
-      ln -sfT ${iHaskell.spec}/kernels/ihaskell_ihaskell-data-env ~/.local/share/jupyter/kernels/iHaskell-data-env
+ #     ln -sfT ${iHaskell.spec}/kernels/ihaskell_ihaskell-data-env ~/.local/share/jupyter/kernels/iHaskell-data-env
       ln -sfT ${IRkernel.spec}/kernels/ir_IRkernel-data-env ~/.local/share/jupyter/kernels/IRkernel-data-env
       ln -sfT ${iNix.spec}/kernels/inix_nix-kernel/  ~/.local/share/jupyter/kernels/INix-data-env
 

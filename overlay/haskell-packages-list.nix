@@ -1,20 +1,21 @@
 {pkgs}:
-(with pkgs.haskellPackages.ghcWithPackages; (p: with p;
+#(with pkgs.haskellPackages.ghcWithPackages; (p: with p;
+(p: with p;
   [hvega
    formatting
 
    inline-r
 
 
-   libtorch-ffi_cpu
+#   libtorch-ffi_cpu
 
    inline-c
 
    inline-c-cpp
 
-   hasktorch-examples_cpu
+#   hasktorch-examples_cpu
 
-   hasktorch_cpu
+#   hasktorch_cpu
 
    matrix
 
@@ -48,8 +49,9 @@
 
    lens
 
-   random-fu
+ #  random-fu
 
-   random-fu-multivariate
+ #  random-fu-multivariate
 
-  ]))
+  ])
+# )

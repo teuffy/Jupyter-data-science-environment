@@ -3,7 +3,35 @@ let
   packageOverrides = selfPythonPackages: pythonPackages: {
     jupyterlab_git =  pkgs.callPackage ./pkgs/jupyterlab-git {};
     jupyter_lsp =  pkgs.callPackage ./pkgs/jupyter-lsp {};
-    torchBin = (import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/6cce9c30786442f1fb2b6bd7c2c7c9a089e8648b.tar.gz"){}).python37Packages.pytorch-bin;
+    jupytext =  pkgs.callPackage ./pkgs/jupytext {};
+
+#    torchBin = (import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/6cce9c30786442f1fb2b6bd7c2c7c9a089e8648b.tar.gz"){}).python37Packages.pytorch-bin;
+
+    pyzmq = pythonPackages.pyzmq.overridePythonAttrs (_:{
+      src = pythonPackages.fetchPypi {
+        pname = "pyzmq";
+        version = "20.0.0";
+        sha256 = "sha256-gkrViIMxqt6sdyvOJ+HC+8q4L63pLtvSNFQsThLw3Kk=";
+      };
+    });
+
+    ipykernel = pythonPackages.ipykernel.overridePythonAttrs (_:{
+      src = pythonPackages.fetchPypi {
+        pname = "ipykernel";
+        version = "5.3.4";
+        sha256 = "sha256-myZSrxYHmGobIxxiMC0HC8BTT1ZMOTpdnRMNuau76J0=";
+      };
+    });
+
+    fsspec = pythonPackages.fsspec.overridePythonAttrs (_:{
+      src = pkgs.fetchFromGitHub {
+        owner = "intake";
+        repo = "filesystem_spec";
+        rev =  "0.8.4";
+        sha256 = "sha256-3Xk/vaQRy9iV52IFo26CmSuRo4uzm9cH7iOtaocr/Ks=";
+      };
+    });
+
     # jupyterlab = pythonPackages.jupyterlab.overridePythonAttrs (_:{
     #   src = pythonPackages.fetchPypi {
     #     pname = "jupyterlab";
@@ -26,6 +54,7 @@ let
     # });
 
 
+
     jupyter_contrib_core = pythonPackages.buildPythonPackage rec {
       pname = "jupyter_contrib_core";
       version = "0.3.3";
@@ -39,7 +68,7 @@ let
         pythonPackages.traitlets
         pythonPackages.notebook
         pythonPackages.tornado
-	pythonPackages.jupytext
+#	pythonPackages.jupytext
       ];
     };
 

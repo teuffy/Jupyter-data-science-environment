@@ -1,11 +1,12 @@
 {pkgs}:
-(with pkgs.python3.withPackages; (p: with p;  [
+#(with pkgs.python3.withPackages; (p: with p;  [
+(p: with p; [
   jsondiff
   geoip2
   numpy
   pandas
   matplotlib
-  editdistance
+#  editdistance
   ipywidgets
   graphviz
   pillow
@@ -14,22 +15,23 @@
   sqlalchemy
   qtconsole
   sympy
-  nbdev
-  fastai2
-  fastai
-  zat
+#  nbdev
+#  fastai2
+#  fastai
+#  zat
 #  voila
 #  jupytext
   
   #financial machine learning.
   
-  mlfinlab
+#  mlfinlab
   tqdm
-  tensorflow
+#  tensorflow
   patsy
   Keras
   dask
-  pyfolio
+#  pyfolio
   
-]))
+])
+#)
   
